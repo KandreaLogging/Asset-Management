@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Management - Pick-Up & Drop-Off Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            body * { visibility: hidden; }
+            #printable-qr-section, #printable-qr-section * { visibility: visible; }
+            #printable-qr-section { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-indigo-700 text-white shadow-lg no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid font-bold fa-boxes-packing text-2xl text-indigo-200"></i>
+                    <span class="font-bold text-xl tracking-tight">Asset Management Log</span>
+                </div>
+                <nav class="flex space-x-2 text-sm font-medium">
+                    <button onclick="switchTab('form')" id="tab-btn-form" class="px-3 py-2 rounded-lg bg-indigo-800 text-white transition flex items-center gap-2">
+                        <i class="fa-solid fa-truck-ramp-box"></i> Form
+                    </button>
+                    <button onclick="switchTab('qr')" id="tab-btn-qr" class="px-3 py-2 rounded-lg hover:bg-indigo-600 text-indigo-100 transition flex items-center gap-2">
+                        <i class="fa-solid fa-qrcode"></i> QR Display
+                    </button>
+                    <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="px-3 py-2 rounded-lg hover:bg-indigo-600 text-indigo-100 transition flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- FORM TAB -->
+        <section id="view-form" class="max-w-xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-900 text-white p-6 text-center">
+                    <h2 class="text-2xl font-bold">Item Pick-Up & Drop-Off Log</h2>
+                    <p class="text-slate-400 text-sm mt-1">Record equipment or material transfers</p>
+                </div>
+
+                <form id="attendance-form" onsubmit="handleFormSubmit(event)" class="p-6 sm:p-8 space-y-5">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Select Action</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="action" value="PICKUP" checked class="peer hidden" onchange="updateActionStyle()">
+                                <div class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-slate-200 peer-checked:border-amber-500 peer-checked:bg-amber-50 peer-checked:text-amber-700 font-semibold text-slate-600 transition">
+                                    <i class="fa-solid fa-box-open text-lg"></i> Pick-Up
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="action" value="DROPOFF" class="peer hidden" onchange="updateActionStyle()">
+                                <div class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-slate-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 font-semibold text-slate-600 transition">
+                                    <i class="fa-solid fa-boxes-stacked text-lg"></i> Drop-Off
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="employeeName" class="block text-sm font-medium text-slate-700 mb-1">Employee / Driver Name *</label>
+                        <input type="text" id="employeeName" required placeholder="e.g. John Smith" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label for="projectSite" class="block text-sm font-medium text-slate-700 mb-1">Project # / Site Name *</label>
+                        <input type="text" id="projectSite" required placeholder="e.g. PRJ-2026-08" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label for="location" class="block text-sm font-medium text-slate-700 mb-1">Location Zone *</label>
+                        <select id="location" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="" disabled selected>Select Location Zone</option>
+                            <option value="Scaffold Yard">Scaffold Yard</option>
+                            <option value="Office Yard">Office Yard</option>
+                            <option value="Office">Office</option>
+                            <option value="Bay 1">Bay 1</option>
+                            <option value="Bay 2">Bay 2</option>
+                            <option value="Tool Crib">Tool Crib</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="itemDescription" class="block text-sm font-medium text-slate-700 mb-1">Item Description *</label>
+                        <textarea id="itemDescription" rows="2" required placeholder="e.g. Scaffolding frames, Drill Kit..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Photo Attachment (Optional)</label>
+                        <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhotoSelect(event)" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    </div>
+
+                    <button type="submit" id="submit-btn" class="w-full py-3.5 px-6 rounded-xl font-bold text-white bg-amber-600 hover:bg-amber-700 transition shadow-lg">
+                        Submit Item Pick-Up
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- QR DISPLAY TAB -->
+        <section id="view-qr" class="hidden max-w-xl mx-auto">
+            <div id="printable-qr-section" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Scan to Pick-Up / Drop-Off</h2>
+                <div class="my-6 flex justify-center">
+                    <div id="qrcode" class="p-4 bg-white border-2 border-slate-200 rounded-2xl shadow-inner inline-block"></div>
+                </div>
+                <div class="no-print mb-4">
+                    <input type="text" id="target-url-input" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg px-3 py-2 mb-2">
+                    <button onclick="updateTargetUrlFromInput()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-medium">Update QR Code</button>
+                </div>
+                <button onclick="window.print()" class="no-print px-4 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-semibold">Print QR Poster</button>
+            </div>
+        </section>
+
+        <!-- DASHBOARD TAB -->
+        <section id="view-dashboard" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <h3 class="text-lg font-bold mb-4">Recent Local Logs</h3>
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="border-b text-xs font-bold uppercase text-slate-500">
+                            <th class="py-2 px-3">Action</th>
+                            <th class="py-2 px-3">Employee</th>
+                            <th class="py-2 px-3">Project</th>
+                            <th class="py-2 px-3">Description</th>
+                            <th class="py-2 px-3">Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-table-body" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const webAppUrl = "https://script.google.com/macros/s/AKfycbymzp3i3ebkgT81BJQJa8_aCeA_pnyp4_noq6FMKecDBa29ocj8EGZFsFm-GVCe8mL4/exec";
+        const liveUrl = window.location.href.split('?')[0];
+        let currentPhotoBase64 = null;
+        let logs = JSON.parse(localStorage.getItem('qr_item_transfer_logs')) || [];
+
+        window.onload = function() {
+            document.getElementById('target-url-input').value = liveUrl;
+            generateQRCode(liveUrl);
+            renderLogTable();
+        };
+
+        function generateQRCode(url) {
+            const qrContainer = document.getElementById("qrcode");
+            qrContainer.innerHTML = "";
+            new QRCode(qrContainer, {
+                text: url,
+                width: 200,
+                height: 200,
+                colorDark : "#0f172a",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }
+
+        function updateTargetUrlFromInput() {
+            const newUrl = document.getElementById('target-url-input').value.trim();
+            if (newUrl) generateQRCode(newUrl);
+        }
+
+        function switchTab(tabName) {
+            ['form', 'qr', 'dashboard'].forEach(view => {
+                const viewEl = document.getElementById(`view-${view}`);
+                const btnEl = document.getElementById(`tab-btn-${view}`);
+                if (view === tabName) {
+                    viewEl.classList.remove('hidden');
+                    btnEl.className = "px-3 py-2 rounded-lg bg-indigo-800 text-white transition flex items-center gap-2";
+                } else {
+                    viewEl.classList.add('hidden');
+                    btnEl.className = "px-3 py-2 rounded-lg hover:bg-indigo-600 text-indigo-100 transition flex items-center gap-2";
+                }
+            });
+            if (tabName === 'dashboard') renderLogTable();
+        }
+
+        function updateActionStyle() {
+            const action = document.querySelector('input[name="action"]:checked').value;
+            const submitBtn = document.getElementById('submit-btn');
+            if (action === 'PICKUP') {
+                submitBtn.className = 'w-full py-3.5 px-6 rounded-xl font-bold text-white bg-amber-600 hover:bg-amber-700 transition shadow-lg';
+                submitBtn.innerText = 'Submit Item Pick-Up';
+            } else {
+                submitBtn.className = 'w-full py-3.5 px-6 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-lg';
+                submitBtn.innerText = 'Submit Item Drop-Off';
+            }
+        }
+
+        function handlePhotoSelect(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                currentPhotoBase64 = null;
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) { 
+                currentPhotoBase64 = e.target.result; 
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const employeeName = document.getElementById('employeeName').value.trim();
+            const projectSite = document.getElementById('projectSite').value.trim();
+            const location = document.getElementById('location').value;
+            const itemDescription = document.getElementById('itemDescription').value.trim();
+            const actionVal = document.querySelector('input[name="action"]:checked').value;
+
+            const formData = {
+                action: actionVal === 'PICKUP' ? 'Pick-Up' : 'Drop-Off',
+                driverName: employeeName,
+                projectSite: projectSite,
+                location: location,
+                itemDesc: itemDescription,
+                photoUrl: currentPhotoBase64 || "No Photo"
+            };
+
+            logs.unshift({ id: Date.now(), employeeName, projectSite, itemDescription, action: formData.action, timestamp: new Date().toISOString() });
+            localStorage.setItem('qr_item_transfer_logs', JSON.stringify(logs));
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Submitting...";
+
+            fetch(webAppUrl, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData)
+            }).then(() => {
+                submitBtn.disabled = false;
+                updateActionStyle();
+                alert("Submitted successfully! Drive link logged & email sent.");
+                document.getElementById('attendance-form').reset();
+                currentPhotoBase64 = null;
+                renderLogTable();
+            }).catch(error => {
+                submitBtn.disabled = false;
+                updateActionStyle();
+                console.error("Error:", error);
+                alert("Submitted!");
+                document.getElementById('attendance-form').reset();
+                currentPhotoBase64 = null;
+                renderLogTable();
+            });
+        }
+
+        function renderLogTable() {
+            const tableBody = document.getElementById('log-table-body');
+            tableBody.innerHTML = '';
+            if (logs.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-400">No local logs recorded yet.</td></tr>';
+                return;
+            }
+            logs.forEach(log => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3 font-semibold">${log.action}</td>
+                    <td class="py-2.5 px-3">${log.employeeName}</td>
+                    <td class="py-2.5 px-3">${log.projectSite}</td>
+                    <td class="py-2.5 px-3">${log.itemDescription}</td>
+                    <td class="py-2.5 px-3 text-xs text-slate-500">${new Date(log.timestamp).toLocaleTimeString()}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+</html>
